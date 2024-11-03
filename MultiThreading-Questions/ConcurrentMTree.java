@@ -21,7 +21,8 @@ class TreeNode {
         child.parent = this;
         children.add(child);
     }
-    int getValue(){
+
+    int getValue() {
         return value;
     }
 }
@@ -40,7 +41,10 @@ public class ConcurrentMTree {
             long stamp = current.lock.writeLock();
             try {
                 current.value += x;
-                System.out.println("Added " + x + " to node with current value: " + current.value);
+                System.out.println(Thread.currentThread().getName() + " added " + x + " to node with current value: " + current.value);
+                if (current.parent != null) {
+                    System.out.println(Thread.currentThread().getName() + " modified parent node with new value: " + current.parent.value);
+                }
             } finally {
                 current.lock.unlockWrite(stamp);
             }
@@ -55,7 +59,10 @@ public class ConcurrentMTree {
             long stamp = current.lock.writeLock();
             try {
                 current.value -= 2;
-                System.out.println("Subtracted 2 from node with current value: " + current.value);
+                System.out.println(Thread.currentThread().getName() + " subtracted 2 from node with current value: " + current.value);
+                if (current.parent != null) {
+                    System.out.println(Thread.currentThread().getName() + " modified parent node with new value: " + current.parent.value);
+                }
             } finally {
                 current.lock.unlockWrite(stamp);
             }
@@ -104,12 +111,12 @@ public class ConcurrentMTree {
         tree.root.addChild(child1);
         tree.root.addChild(child2);
 
-        // Run concurrent operations
-        Thread t1 = new Thread(() -> tree.add(child1, 4));
-        Thread t2 = new Thread(() -> tree.subtract(child2));
-        Thread t3 = new Thread(() -> tree.add(tree.root, 7));
-        Thread t4 = new Thread(() -> tree.subtract(child1));
-        Thread t5 = new Thread(() -> tree.add(child2, 6));
+        // Run concurrent operations with named threads
+        Thread t1 = new Thread(() -> tree.add(child1, 4), "Thread 1");
+        Thread t2 = new Thread(() -> tree.subtract(child2), "Thread 2");
+        Thread t3 = new Thread(() -> tree.add(tree.root, 7), "Thread 3");
+        Thread t4 = new Thread(() -> tree.subtract(child1), "Thread 4");
+        Thread t5 = new Thread(() -> tree.add(child2, 6), "Thread 5");
 
         t1.start();
         t2.start();
@@ -132,3 +139,26 @@ public class ConcurrentMTree {
         tree.printTree();
     }
 }
+
+
+/*
+ * 
+
+Thread 5 added 6 to node with current value: 9
+Thread 3 added 7 to node with current value: 17
+Thread 1 added 4 to node with current value: 9
+Thread 5 modified parent node with new value: 17
+Thread 1 modified parent node with new value: 17
+Thread 5 added 6 to node with current value: 23
+Thread 2 subtracted 2 from node with current value: 7
+Thread 2 modified parent node with new value: 27
+Thread 4 subtracted 2 from node with current value: 7
+Thread 4 modified parent node with new value: 27
+Thread 1 added 4 to node with current value: 27
+Thread 2 subtracted 2 from node with current value: 25
+Thread 4 subtracted 2 from node with current value: 23
+Current tree values:
+Node Value: 23
+Node Value: 7
+Node Value: 7
+ */
