@@ -1,4 +1,9 @@
-import java.lang.*;  
+import java.lang.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;  
 
 //Functional interface
 
@@ -16,9 +21,9 @@ void canDrive(String val);
 default boolean canWalk(){
   return false;
 }
-// default String canSwim(String val){
-//    return val;
-// }
+default String canSwim(String val){
+   return val;
+}
 static void canEat(){
 
 }
@@ -61,6 +66,13 @@ interface Supplier<T>{
 @FunctionalInterface
 interface Function<T,R>{
   R apply(T t);
+  default <V> Function<T, V> andThen(Function<? super R, ? extends V> after) {
+    // Validate after is not null
+    if (after == null) {
+        throw new NullPointerException("After function must not be null");
+    }
+    return (T t) -> after.apply(apply(t));
+}
 }
 
 @FunctionalInterface
@@ -151,6 +163,56 @@ class Java_Function_Interface{
     thread1.start();
 
     //////////////////////////////////////////////////////////////
+    /// 
+    List<String> words = Arrays.asList("apple", "banana", "cherry");
+     Function<String, Integer> stringLength = s -> s.length();
+        
+        List<Integer> lengths = words.stream()
+                                   // .map(s-> stringLength.apply(s))
+                                   .map(stringLength::apply)
+                                    .collect(Collectors.toList());
+        
+        System.out.println("Lengths: " + lengths);
+//Lengths: [5, 6, 6]
+
+        Function<String, String> toUpperCase = String::toUpperCase;
+        Function<String, String> addSuffix = s -> s + "!!!";
+
+         // Chain functions: first convert to uppercase, then add suffix.
+         Function<String, String> combinedFunction = toUpperCase.andThen(addSuffix);
+        
+         String result = combinedFunction.apply("hello");
+         System.out.println(result); // Output: HELLO!!!
+
+         // BinaryOperator to add two integers
+        BinaryOperator<Integer> add = (a11, b11) -> a11 + b11;
+        // BinaryOperator to multiply two integers
+        BinaryOperator<Integer> multiply = (a21, b21) -> a21 * b21;
+        
+        System.out.println("Sum: " + add.apply(5, 3));        // Outputs: Sum: 8
+        System.out.println("Product: " + multiply.apply(5, 3)); // Outputs: Product: 15
+
+         // Predicate to validate email format
+         Predicate<String> isValidEmail = email -> email != null && email.contains("@") && email.contains(".");
+
+         // Validate emails
+         System.out.println("Email validation: " + isValidEmail.test("test@example.com")); // true
+         System.out.println("Email validation: " + isValidEmail.test("invalid-email")); // false
+       
+         
+          // BiFunction to calculate discount based on user type
+        BiFunction<Double, String, Double> discountCalculator = (amount, userType) -> {
+            if ("Premium".equalsIgnoreCase(userType)) {
+                return amount * 0.20; // 20% discount
+            } else {
+                return amount * 0.10; // 10% discount
+            }
+        };
+
+        // Calculate discounts
+        System.out.println("Discount for Regular User: " + discountCalculator.apply(1000.0, "Regular")); // 100
+        System.out.println("Discount for Premium User: " + discountCalculator.apply(1000.0, "Premium")); // 200
+
 
     }
 }
