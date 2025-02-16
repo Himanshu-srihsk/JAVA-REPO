@@ -182,7 +182,110 @@ class PQRErasure{
 	}
 }
 
+ interface Container<T> {
+    void add(T item);
+    T get(int index);
+    int size();
+}
+
+ class SimpleList<T> implements Container<T> {
+    private List<T> list = new ArrayList<>();
+
+    @Override
+    public void add(T item) {
+        list.add(item);
+    }
+
+    @Override
+    public T get(int index) {
+        return list.get(index);
+    }
+
+    @Override
+    public int size() {
+        return list.size();
+    }
+
+    @Override
+    public String toString() {
+        return list.toString();
+    }
+}
+
+
+ interface Repository<T, ID> {
+    T findById(ID id);
+    List<T> findAll();
+    void save(T entity);
+    void delete(T entity);
+}
+
+
+ class InMemoryRepository<T, ID> implements Repository<T, ID> {
+    private final Map<ID, T> storage = new HashMap<>();
+    private final Function<T, ID> idExtractor;
+    
+    // The idExtractor tells the repository how to get the ID from an entity.
+    public InMemoryRepository(Function<T, ID> idExtractor) {
+        this.idExtractor = idExtractor;
+    }
+    
+    @Override
+    public T findById(ID id) {
+        return storage.get(id);
+    }
+    
+    @Override
+    public List<T> findAll() {
+        return new ArrayList<>(storage.values());
+    }
+    
+    @Override
+    public void save(T entity) {
+        ID id = idExtractor.apply(entity);
+        storage.put(id, entity);
+    }
+    
+    @Override
+    public void delete(T entity) {
+        ID id = idExtractor.apply(entity);
+        storage.remove(id);
+    }
+}
+ class User {
+  private final Integer id;
+  private final String name;
+
+  public User(Integer id, String name) {
+      this.id = id;
+      this.name = name;
+  }
+
+  public Integer getId() { 
+      return id; 
+  }
+  
+  public String getName() { 
+      return name; 
+  }
+
+  @Override
+  public String toString() {
+      return "User{id=" + id + ", name='" + name + "'}";
+  }
+}
+
+
 class Java_Generics{
+
+  public static void printSum(Container<? extends Number> container) {
+    double sum = 0;
+    for (int i = 0; i < container.size(); i++) {
+        sum += container.get(i).doubleValue();
+    }
+    System.out.println("Sum: " + sum);
+}
+
 	public static void main(String[] args){
         Print printObj1= new Print();
         printObj1.setPrintValue(1);
@@ -287,6 +390,55 @@ class Java_Generics{
         abc.setVal(5.5);       // T is Double
         abc.setVal(2.34f);     // T is Float
         abc.setVal(100L);      // T is Long
+
+
+
+        SimpleList<Integer> intList = new SimpleList<>();
+        intList.add(10);
+        intList.add(20);
+        intList.add(30);
+
+        SimpleList<Double> doubleList = new SimpleList<>();
+        doubleList.add(1.5);
+        doubleList.add(2.5);
+        doubleList.add(3.5);
+
+        System.out.println("Integer list: " + intList);
+        printSum(intList);
+
+        System.out.println("Double list: " + doubleList);
+        printSum(doubleList);
+        /*
+         * Integer list: [10, 20, 30]
+Sum: 60.0
+Double list: [1.5, 2.5, 3.5]
+Sum: 7.5
+         */
+
+         System.out.println("----------------------------------------------------------------- " );
+          // Create a repository for User entities, using Integer as the ID type.
+        Repository<User, Integer> userRepository = new InMemoryRepository<>(User::getId);
+        
+        // Save some users
+        userRepository.save(new User(1, "Alice"));
+        userRepository.save(new User(2, "Bob"));
+        
+        // Retrieve a user by id
+        User user = userRepository.findById(1);
+        System.out.println("User with id 1: " + user);
+        
+        // Retrieve all users
+        System.out.println("All users: " + userRepository.findAll());
+        
+        // Delete a user
+        userRepository.delete(user);
+        System.out.println("After deletion, all users: " + userRepository.findAll());
+
+        /*
+         * User with id 1: User{id=1, name='Alice'}
+All users: [User{id=1, name='Alice'}, User{id=2, name='Bob'}]
+After deletion, all users: [User{id=2, name='Bob'}]
+         */
 
 	}
 }
